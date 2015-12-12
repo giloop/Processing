@@ -35,7 +35,7 @@ class ImageMover {
     nomThumb = nomVig;
     nomImage = nomVig.replaceFirst("_thumb.jpg", ".jpg");
     // Récupération de la date
-    String[] nomParts = split(nomThumb, '\\');
+    String[] nomParts = split(nomThumb, pathSep);
     dateFull = nomParts[nomParts.length-1].substring(5);
     dateTxt = dateFull.substring(11,13) + "h" + dateFull.substring(14,16) + 
     ", le "+ dateFull.substring(8,10) + "/" +dateFull.substring(5,7) + "/" + dateFull.substring(0,4);
@@ -68,7 +68,7 @@ class ImageMover {
     } else {
       image(img, pos.x, pos.y);
       fill(255);
-      text(dateTxt, pos.x, img.height+pos.y-8); 
+      text(dateTxt, pos.x, img.height+pos.y-9, size.x, 9); 
     }
   }
 

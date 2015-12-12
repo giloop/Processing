@@ -5,30 +5,34 @@
 
 class imageGrid {
   // Paramètre de la grille
+  int wGrid;
+  int hGrid;
   int nbLig1 = 2;
   int nbCol1 = 3;
-  int nbSkip = nbLig1*nbCol1;
+  float h1;
+  float w1; 
+  int nbCol2;
+  int nbImg;
+  int nbImgBig = nbLig1*nbCol1;
   int space = 2;
   // Paramètres des vignettes
   int tW = 216;
   int tH = 384;
   float tRatio;
 
-  float h1;
-  float w1; 
-  int nbCol2;
-  int nbCol3;
-  int nbImg;
 
   // liste des noms des images
   String repImages;
   ArrayList<String> nomImages;
   int currentIdx;
   ArrayList<ImageMover> pimages;
-  // Constructeur
-  imageGrid(String nomRepImages) {
+
+  /** Constructeur */
+  imageGrid(String nomRepImages, int gridWidth, int gridHeight) {
     repImages = nomRepImages;
     nomImages = new ArrayList<String>();
+    wGrid = gridWidth;
+    hGrid = gridHeight;
     listerImages();
     calculerPosGrille();
 
@@ -38,22 +42,43 @@ class imageGrid {
       pimages.add(new ImageMover(nomImages.get(i), int(w1), int(h1)));
     }
 
-    currentIdx = pimages.size();
+    currentIdx = 0;
   }
 
+  /* Recharge le diaporama et renvoie true si de nouvelles images ont été trouvées */ 
+  boolean reload() {
+    int nbOld = nomImages.size();
+
+    listerImages();
+    if (nbOld == nomImages.size()) { return false; }
+    
+    calculerPosGrille();
+
+    pimages.clear(); // = new ArrayList<ImageMover>();
+    for (int i=0; i<min(nbImg, nomImages.size()); i++) {
+      // println("ImageMover : "+nomImages.get(i));
+      pimages.add(new ImageMover(nomImages.get(i), int(w1), int(h1)));
+    }
+
+    currentIdx = 0;
+     return true; 
+  }
+  
+  /* Calcule les dimensions des images dans la grille */
   void calculerPosGrille() {
     // Mise a jour h, w et nbCol
-    h1 = (height-space*(nbLig1+1))/(nbLig1);
+    h1 = (hGrid-space*(nbLig1+1))/(nbLig1);
     tRatio = float(tH)/tW;
     w1 = h1/tRatio;
 
     // Calcul de l'espace restant pour des demis images 
-    nbCol2 = ceil((width-(space+w1)*(nbCol1))/(0.5*w1+space));
+    nbCol2 = floor((wGrid-(space+w1)*(nbCol1))/(0.5*w1+space));
     // Nombre d'images totale dans la grille en fonction de la taille de l'écran
     nbImg = nbLig1*nbCol1 + 2*nbCol2*nbLig1;
     println("La grille contient " + nbImg+" images, (nbCol2="+nbCol2+")");
   }
 
+  /* Affiche les images */
   void display() {
     for (int i=0; i<pimages.size(); i++) {
       pimages.get(i).update();
@@ -61,6 +86,7 @@ class imageGrid {
     }
   }
 
+  /* Mise à jour de la position des images (grille et mouvements) */
   void update() {
     int c;
     int l;
@@ -69,7 +95,7 @@ class imageGrid {
     for (l=1; l<=nbLig1; l++) {
       for (c=1; c<=nbCol1; c++) {
         // Positionne l'image
-        pimages.get(idx++).moveTo(width-(w1+space)*c, height-(h1+space)*l, w1, h1);
+        pimages.get(idx++).moveTo(wGrid-(w1+space)*c, hGrid-(h1+space)*l, w1, h1);
         // Arret si plus d'images à afficher
         if (idx>=pimages.size()) { 
           return;
@@ -77,10 +103,10 @@ class imageGrid {
       }
     }
     // Images de taille h1/2,w1/2
-    int xOffset = width-floor((w1+space)*nbCol1);
+    int xOffset = wGrid-floor((w1+space)*nbCol1);
     for (l=1; l<=nbLig1*2; l++) {
       for (c=1; c<=nbCol2; c++) {
-        pimages.get(idx++).moveTo(xOffset-(w1*0.5+space)*c, height-(h1*0.5+space)*l, w1*0.5, h1*0.5);
+        pimages.get(idx++).moveTo(xOffset-(w1*0.5+space)*c, hGrid-(h1*0.5+space)*l, w1*0.5, h1*0.5);
         // Arret si plus d'images à afficher
         if (idx>=pimages.size()) { 
           return;
@@ -89,30 +115,48 @@ class imageGrid {
     }
   }
 
-  void getPrev() {
-    if (currentIdx<=pimages.size()) {
-      println("Premiere image atteinte");
-      return;
-    }
-    currentIdx--;
-    println("ImageMover : "+nomImages.get(currentIdx-pimages.size()));
-    pimages.add(0, new ImageMover(nomImages.get(currentIdx-pimages.size()), int(w1), int(h1)));
-    if (pimages.size()==nbImg) {
-      pimages.remove(pimages.size()-1);
-    }
-  }
-
-  void getNext() {
-    if (pimages.size()>nbCol1*nbLig1) {
-      pimages.remove(0);
-    }
-    println("ImageMover : "+nomImages.get(currentIdx));
-    if (currentIdx<nomImages.size()) {
-      pimages.add(pimages.size(), new ImageMover(nomImages.get(currentIdx), int(w1), int(h1)));
+  /* Passe à l'image précédente */
+  int getPrev() {
+    println("imageGrid.getPrev()");
+    if (currentIdx>=nomImages.size()-nbImgBig) {
+      println("Premières images affichées en grand");
+    } else { 
       currentIdx++;
+      int idxAjout = currentIdx + pimages.size(); 
+      if (idxAjout<nomImages.size()) {
+        println("ajout de "+nomImages.get(idxAjout)+" a la fin de ArrayList");
+        pimages.add(pimages.size(), new ImageMover(nomImages.get(idxAjout), int(w1), int(h1)));
+      }
+      if (pimages.size()>nbImgBig) {
+        println("suppression de la première image");
+        pimages.remove(0);
+      }
     }
+    println("getPrev() : currentIdx = "+currentIdx);
+    return currentIdx;
   }
 
+  /* Passe à l'image suivante */
+  int getNext() {
+    println("imageGrid.getNext()");
+    if (currentIdx==0) { 
+      println("Derniere image atteinte");
+    } else { 
+      currentIdx--;
+      int idxAjout = currentIdx;
+      if (idxAjout < nomImages.size()) {
+        println("ajout de "+nomImages.get(idxAjout)+" au début");
+        pimages.add(0, new ImageMover(nomImages.get(idxAjout), int(w1), int(h1)));
+      }
+      if (pimages.size()>nbImg) {
+        println("suppression derniere image");
+        pimages.remove(pimages.size()-1);
+      }
+    }
+    return currentIdx;
+  }
+
+  /* rempli nomImages, liste des images du dossier */
   void listerImages() {
     nomImages.clear();
 
@@ -134,10 +178,11 @@ class imageGrid {
         nomImages.add(path);
       }
     }
-    Collections.sort(nomImages);
+    Collections.sort(nomImages, Collections.reverseOrder());
     /*for (int i=0; i<nomImages.size(); i++) {
-      println(i+" : "+nomImages.get(i));
-    } */
+     println(i+" : "+nomImages.get(i));
+     } */
     println(nomImages.size()+" images trouvées");
   }
-}
+
+} // End of Class ImageGrid

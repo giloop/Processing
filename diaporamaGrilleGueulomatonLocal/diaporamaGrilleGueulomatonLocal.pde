@@ -1,56 +1,139 @@
 import controlP5.*;
 import java.util.Collections;
+import processing.serial.*;
+import cc.arduino.*;
+import java.lang.*; 
 
+Arduino myArduino;
+boolean bArduino;
 // Constantes de l'application
-// String repImg = "/home/gilou/Images/FeteRGC2015/";
+String repImg = "/home/gilou/Images/FeteRGC2015/";
 // String repImg = "M:\\Processing 3 - Sketchbook\\diaporamaGrilleGueulomatonLocal\\data\\FDMTinte2015";
-String repImg = "F:\\Sketchbook-3.0\\diaporamaGrilleGueulomatonLocal\\data\\FDMTinte2015";
+// String repImg = "F:\\Sketchbook-3.0\\diaporamaGrilleGueulomatonLocal\\data\\FDMTinte2015";
+char pathSep;
 
 imageGrid diaporama;
 ControlP5 cp5;
+int sliderValue = 0;
+int idxImg;
 PFont f;
+boolean bRun;
+int majDiaporama = 5000; // Mise à jour du diaporama, ms 
+int timeMaj;
 
 void setup() {
-  size(800, 600); // fullScreen(); //  3840        2160
+  if (new String("Linux").equals(new String(System.getProperty("os.name")))) {
+    pathSep = '/'; // Linux
+  } else {
+    pathSep = '\\';  //Windows
+  }
+
+  size(820, 600); // fullScreen(); //  3840        2160
+  println("System : "+System.getProperty("os.name"));
+
   f = createFont("Calibri", 10);
   textFont(f);
+  bRun = false;
 
-  diaporama = new imageGrid(repImg);
+  diaporama = new imageGrid(repImg, width, height-22);
+  idxImg = 0;
+
   cp5 = new ControlP5(this);
 
   // create a new button with name 'buttonA'
   cp5.addButton("getPrev")
     .setValue(0)
-    .setPosition(0,height-50)
-    .setSize(50, 50)
+    .setPosition(0, height-20)
+    .setSize(50, 20)
     .setLabel("Precedent");
-    ;
+  ;
 
   // and add another button
-  cp5.addBang("getNext")
+  cp5.addButton("getNext")
     .setValue(0)
-    .setPosition(0,height-150)
-    .setSize(50, 50)
+    .setPosition(52, height-20)
+    .setSize(50, 20)
     .setLabel("Suivant");
-    ;
+  ;
 
+  // add a horizontal sliders, the value of this slider will be linked
+  // to variable 'slider' 
+  cp5.addSlider("slider")
+    .setPosition(104, height-20)
+    .setSize(width-106, 20)
+    .setRange(0, max(0,diaporama.nomImages.size()-diaporama.nbImgBig))
+    ;
+    
+    
+  try {
+    myArduino = new Arduino(this, Arduino.list()[0], 57600);
+    // Set the Arduino digital pins as inputs.
+    myArduino.pinMode(0, Arduino.INPUT);
+    bArduino = true;
+  } 
+  catch (Exception e) {
+    e.printStackTrace();
+    bArduino = false;
+  }
+   
+  // Initialisation des timers
+  timeMaj = millis();
+
+  bRun = true;
 }
 
 
 void draw() {
   background(0);
+  if (bArduino) {
+    sliderValue = int( myArduino.analogRead(0) * diaporama.nomImages.size() / 1023.0) ;
+    cp5.getController("slider").setValue(sliderValue);
+  } 
+  updateSlider();
   diaporama.update();
   diaporama.display();
+  // Mise à jour de la grille
+  if (millis()-timeMaj > majDiaporama) {
+    majGrille();
+    timeMaj = millis();
+  }
 }
 
-public void getPrev(int val) {
-  //println("### getPrev(" + val + ")");
-  diaporama.getPrev();
+// Fonction appelée à chaque étape 
+void updateSlider() {
+  if (idxImg>sliderValue) {
+    idxImg = diaporama.getNext();
+    timeMaj = millis();
+  } else if (idxImg<sliderValue) {
+    idxImg = diaporama.getPrev();
+    timeMaj = millis();
+  }
 }
-public void getNext(int val) {
-  //println("### getNext(" + val + ")");
-  diaporama.getNext();
+
+void majGrille() {
+  boolean bMaj = diaporama.reload();
+  if (bMaj) {
+    cp5.getController("slider").setMax(max(0,diaporama.nomImages.size()-diaporama.nbImgBig));
+  } 
 }
+
+public void getPrev() {
+  if (bRun) { 
+      cp5.getController("slider").setValue(sliderValue+1);
+  }
+}
+
+public void getNext() {
+  if (bRun) { 
+    //println("### getNext(" + val + ")");
+    cp5.getController("slider").setValue(sliderValue-1);
+  }
+}
+
+void slider(int value) {
+  if (bRun) { sliderValue = value; }
+}
+
 /* Show image 
  void showRandomImg() {
  int iImg = floor(random(0, nbCris+1));
@@ -89,15 +172,21 @@ public void getNext(int val) {
  println(i+": indice hors tableau !!!");
  }
  }
- 
- void keyReleased() {
- if (key == 'r') {
- bRandom = !bRandom;
- } else if (key == 's') {
- save("gueulomaton_"+repImg+".jpg");
- }
- }
  */
+
+void keyReleased() {
+  if (key == CODED) {
+    if (keyCode == LEFT) {
+      cp5.getController("slider").setValue(sliderValue+1);
+
+    } else if (keyCode == RIGHT) {
+      cp5.getController("slider").setValue(sliderValue-1);
+    }
+  } else if (key == 's') {
+    save("gueulomaton_"+repImg+".jpg");
+  }
+}
+
 /*
 int compterImages() {
  int nbImg;
