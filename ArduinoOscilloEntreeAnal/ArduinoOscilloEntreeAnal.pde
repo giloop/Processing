@@ -12,7 +12,7 @@ import java.lang.*;
 Arduino myArduino;
 int xPos;         // horizontal position of the graph
 // Nombres d'entrées analogiques
-int NB_INPUTS = 4; 
+int NB_INPUTS = 5; 
 
 float arValMax[];
 float arValMin[];
@@ -87,7 +87,7 @@ void draw () {
      noFill();
      beginShape();
      for (j=0; j<=xPos; j++) {
-       curveVertex(j, height-arVals[j][i]);
+       curveVertex(j, height*(1-arVals[j][i]/arValMax[i]));
      }
      endShape();
   }
