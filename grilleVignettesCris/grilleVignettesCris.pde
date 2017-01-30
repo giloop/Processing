@@ -1,7 +1,7 @@
 
 
 // Constantes de l'application
-String repImg   = "FDMTinte2015"; // "jae2015"; // 
+String repImg   = "fred44"; // "FDMTinte2015"; // "jae2015"; // 
 String baseUrl  = "http://gueulomaton.org/";
 int thumbWidth  = 216;
 int thumbHeight = 384;

@@ -7,7 +7,7 @@ import java.lang.*;
 Arduino myArduino;
 boolean bArduino;
 // Constantes de l'application
-String repImg = "/home/gilou/Images/FeteRGC2015/";
+String repImg = "/home/gilou/Images/fred44/"; // FeteRGC2015/";
 // String repImg = "M:\\Processing 3 - Sketchbook\\diaporamaGrilleGueulomatonLocal\\data\\FDMTinte2015";
 // String repImg = "F:\\Sketchbook-3.0\\diaporamaGrilleGueulomatonLocal\\data\\FDMTinte2015";
 char pathSep;
